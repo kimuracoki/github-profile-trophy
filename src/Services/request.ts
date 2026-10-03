@@ -7,6 +7,7 @@ import {
   QueryDefaultResponse,
   ServiceError,
 } from "../Types/index.ts";
+import { Logger } from "../Helpers/Logger.ts";
 
 export async function requestGithubData<T = unknown>(
   query: string,
@@ -22,6 +23,10 @@ export async function requestGithubData<T = unknown>(
   const responseData = response.data;
 
   if (responseData?.data?.user) {
+    if (responseData.errors?.length) {
+      // Partial response: surface GraphQL errors (e.g. missing token scopes)
+      Logger.warn(JSON.stringify(responseData.errors, null, 2));
+    }
     return responseData.data.user;
   }
 

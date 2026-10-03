@@ -73,19 +73,24 @@ export class UserInfo {
     userPullRequest: GitHubUserPullRequest,
     userRepository: GitHubUserRepository,
   ) {
+    // Fields may be null when the token lacks access (partial GraphQL response)
+    const repoNodes = (userRepository.repositories?.nodes ?? []).filter(
+      (node): node is Repository => node != null,
+    );
     const totalCommits =
-      userActivity.contributionsCollection.restrictedContributionsCount +
-      userActivity.contributionsCollection.totalCommitContributions;
-    const totalStargazers = userRepository.repositories.nodes.reduce(
+      (userActivity.contributionsCollection?.restrictedContributionsCount ??
+        0) +
+      (userActivity.contributionsCollection?.totalCommitContributions ?? 0);
+    const totalStargazers = repoNodes.reduce(
       (prev: number, node: Repository) => {
-        return prev + node.stargazers.totalCount;
+        return prev + (node.stargazers?.totalCount ?? 0);
       },
       0,
     );
 
     const languages = new Set<string>();
-    userRepository.repositories.nodes.forEach((node: Repository) => {
-      if (node.languages.nodes != undefined) {
+    repoNodes.forEach((node: Repository) => {
+      if (node.languages?.nodes != undefined) {
         node.languages.nodes.forEach((node: Language) => {
           if (node != undefined) {
             languages.add(node.name);
@@ -97,7 +102,7 @@ export class UserInfo {
     // Find the earliest repository creation date
     let earliestRepoDate = userActivity.createdAt; // start with the oldest possible
 
-    earliestRepoDate = userRepository.repositories.nodes.reduce(
+    earliestRepoDate = repoNodes.reduce(
       (earliest, node) => {
         return new Date(node.createdAt).getTime() < new Date(earliest).getTime()
           ? node.createdAt
@@ -119,15 +124,15 @@ export class UserInfo {
     const ogAccount = new Date(earliestRepoDate).getFullYear() <= 2008 ? 1 : 0;
 
     this.totalCommits = totalCommits;
-    this.totalFollowers = userActivity.followers.totalCount;
-    this.totalIssues = userIssue.openIssues.totalCount +
-      userIssue.closedIssues.totalCount;
-    this.totalOrganizations = userActivity.organizations.totalCount;
-    this.totalPullRequests = userPullRequest.pullRequests.totalCount;
-    this.totalReviews =
-      userActivity.contributionsCollection.totalPullRequestReviewContributions;
+    this.totalFollowers = userActivity.followers?.totalCount ?? 0;
+    this.totalIssues = (userIssue.openIssues?.totalCount ?? 0) +
+      (userIssue.closedIssues?.totalCount ?? 0);
+    this.totalOrganizations = userActivity.organizations?.totalCount ?? 0;
+    this.totalPullRequests = userPullRequest.pullRequests?.totalCount ?? 0;
+    this.totalReviews = userActivity.contributionsCollection
+      ?.totalPullRequestReviewContributions ?? 0;
     this.totalStargazers = totalStargazers;
-    this.totalRepositories = userRepository.repositories.totalCount;
+    this.totalRepositories = userRepository.repositories?.totalCount ?? 0;
     this.languageCount = languages.size;
     this.durationYear = durationYear;
     this.durationDays = durationDays;

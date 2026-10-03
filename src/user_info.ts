@@ -2,7 +2,8 @@ type Language = { name: string };
 type Stargazers = { totalCount: number };
 type Repository = {
   languages: { nodes: Language[] };
-  stargazers: Stargazers;
+  stargazerCount?: number;
+  stargazers?: Stargazers;
   createdAt: string;
 };
 export type GitHubUserRepository = {
@@ -83,7 +84,8 @@ export class UserInfo {
       (userActivity.contributionsCollection?.totalCommitContributions ?? 0);
     const totalStargazers = repoNodes.reduce(
       (prev: number, node: Repository) => {
-        return prev + (node.stargazers?.totalCount ?? 0);
+        return prev +
+          (node.stargazerCount ?? node.stargazers?.totalCount ?? 0);
       },
       0,
     );
